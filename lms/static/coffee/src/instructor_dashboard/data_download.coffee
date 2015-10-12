@@ -19,6 +19,8 @@ class DataDownload
     @$section.data 'wrapper', @
     # gather elements
     @$list_studs_btn = @$section.find("input[name='list-profiles']'")
+    @$list_issued_certificate_table_btn = @$section.find("input[name='issued-certificates-list']'")
+    @$list_issued_certificate_csv_btn = @$section.find("input[name='issued-certificates-csv']'")
     @$list_studs_csv_btn = @$section.find("input[name='list-profiles-csv']'")
     @$list_proctored_exam_results_csv_btn = @$section.find("input[name='proctored-exam-results-report']'")
     @$list_may_enroll_csv_btn = @$section.find("input[name='list-may-enroll-csv']")
@@ -34,7 +36,8 @@ class DataDownload
     @$download_display_text           = @$download.find '.data-display-text'
     @$download_request_response_error = @$download.find '.request-response-error'
     @$reports                         = @$section.find '.reports-download-container'
-    @$download_display_table          = @$reports.find '.data-display-table'
+    @$download_display_table          = @$reports.find '.profile-data-display-table'
+    @$certificate_display_table       = @$reports.find '.certificate-data-display-table'
     @$reports_request_response        = @$reports.find '.request-response'
     @$reports_request_response_error  = @$reports.find '.request-response-error'
 
@@ -86,6 +89,39 @@ class DataDownload
         success: (data) =>
           @$reports_request_response.text data['status']
           $(".msg-confirm").css({"display":"block"})
+
+    @$list_issued_certificate_table_btn.click (e) =>
+      url = @$list_issued_certificate_table_btn.data 'endpoint'
+      # Dynamically generate slickgrid table for displaying student profile information
+      @clear_display()
+      @$certificate_display_table.text gettext('Loading...')
+      # fetch user list
+      $.ajax
+        type: 'POST'
+        url: url
+        error: (std_ajax_err) =>
+          @clear_display()
+          @$download_request_response_error.text gettext("Error getting issued certificates list.")
+        success: (data) =>
+          @clear_display()
+
+          # display on a SlickGrid
+          options =
+            enableCellNavigation: true
+            enableColumnReorder: false
+            forceFitColumns: true
+            rowHeight: 35
+
+          columns = ({id: feature, field: feature, name: data.feature_names[feature]} for feature in data.queried_features)
+          grid_data = data.certificates
+
+          $table_placeholder = $ '<div/>', class: 'slickgrid'
+          @$certificate_display_table.append $table_placeholder
+          new Slick.Grid($table_placeholder, grid_data, columns, options)
+
+    @$list_issued_certificate_csv_btn.click (e) =>
+      url = @$list_issued_certificate_csv_btn.data 'endpoint'
+      location.href = url + '?csv=true'
 
     @$list_studs_btn.click (e) =>
       url = @$list_studs_btn.data 'endpoint'
@@ -199,6 +235,7 @@ class DataDownload
   clear_display: ->
     # Clear any generated tables, warning messages, etc.
     @$download_display_text.empty()
+    @$certificate_display_table.empty()
     @$download_display_table.empty()
     @$download_request_response_error.empty()
     @$reports_request_response.empty()
