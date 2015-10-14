@@ -127,7 +127,6 @@ class ProctoredExamsTest(BaseInstructorDashboardTest):
 
     def setUp(self):
         super(ProctoredExamsTest, self).setUp()
-
         self.courseware_page = CoursewarePage(self.browser, self.course_id)
 
         self.course_outline = CourseOutlinePage(
@@ -169,12 +168,32 @@ class ProctoredExamsTest(BaseInstructorDashboardTest):
         # Auto-auth register for the course.
         self._auto_auth(self.USERNAME, self.EMAIL, False)
 
-    def _auto_auth(self, username, email, staff, enrollment_mode="honor"):
+    def _auto_auth(self, username, email, staff):
         """
         Logout and login with given credentials.
         """
         AutoAuthPage(self.browser, username=username, email=email,
-                     course_id=self.course_id, staff=staff, enrollment_mode=enrollment_mode).visit()
+                     course_id=self.course_id, staff=staff).visit()
+
+    def _login_as_a_verified_user(self):
+        """
+        login as a verififed user
+        """
+
+        self._auto_auth(self.USERNAME, self.EMAIL, False)
+
+        # the track selection page cannot be visited. see the other tests to see if any prereq is there.
+        # Navigate to the track selection page
+        self.track_selection_page.visit()
+
+        # Enter the payment and verification flow by choosing to enroll as verified
+        self.track_selection_page.enroll('verified')
+
+        # Proceed to the fake payment page
+        self.payment_and_verification_flow.proceed_to_payment()
+
+        # Submit payment
+        self.fake_payment_page.submit_payment()
 
     def _create_a_proctored_exam_and_attempt(self):
         """
@@ -193,7 +212,7 @@ class ProctoredExamsTest(BaseInstructorDashboardTest):
 
         # login as a verified student and visit the courseware.
         LogoutPage(self.browser).visit()
-        self._auto_auth(self.USERNAME, self.EMAIL, False, enrollment_mode="verified")
+        self._login_as_a_verified_user()
         self.courseware_page.visit()
 
         # Start the proctored exam.
@@ -216,19 +235,21 @@ class ProctoredExamsTest(BaseInstructorDashboardTest):
 
         # login as a verified student and visit the courseware.
         LogoutPage(self.browser).visit()
-        self._auto_auth(self.USERNAME, self.EMAIL, False, enrollment_mode="verified")
+        self._login_as_a_verified_user()
         self.courseware_page.visit()
 
         # Start the proctored exam.
         self.courseware_page.start_timed_exam()
 
-    @flaky  # TODO fix this SOL-1183
+    @flaky(max_runs=20, min_passes=20)
     def test_can_add_remove_allowance(self):
         """
         Make sure that allowances can be added and removed.
         """
         # Given that an exam has been configured to be a timed exam.
         self._create_a_timed_exam_and_attempt()
+
+        LogoutPage(self.browser).visit()
 
         # When I log in as an instructor,
         self.log_in_as_instructor()
@@ -240,6 +261,7 @@ class ProctoredExamsTest(BaseInstructorDashboardTest):
         # Then I can add Allowance to that exam for a student
         self.assertTrue(allowance_section.is_add_allowance_button_visible)
 
+    @flaky(max_runs=20, min_passes=20)
     def test_can_reset_attempts(self):
         """
         Make sure that Exam attempts are visible and can be reset.
@@ -247,6 +269,8 @@ class ProctoredExamsTest(BaseInstructorDashboardTest):
 
         # Given that an exam has been configured to be a proctored exam.
         self._create_a_timed_exam_and_attempt()
+
+        LogoutPage(self.browser).visit()
 
         # When I log in as an instructor,
         self.log_in_as_instructor()
