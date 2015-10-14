@@ -117,6 +117,7 @@ class AutoEnrollmentWithCSVTest(BaseInstructorDashboardTest):
         self.assertEqual(self.auto_enroll_section.first_notification_message(section_type=self.auto_enroll_section.NOTIFICATION_ERROR), "Make sure that the file you upload is in CSV format with no extraneous characters or rows.")
 
 
+@attr('shard_1')
 class ProctoredExamsTest(BaseInstructorDashboardTest):
     """
     End-to-end tests for Proctoring Sections of the Instructor Dashboard.
@@ -127,6 +128,7 @@ class ProctoredExamsTest(BaseInstructorDashboardTest):
 
     def setUp(self):
         super(ProctoredExamsTest, self).setUp()
+
         self.courseware_page = CoursewarePage(self.browser, self.course_id)
 
         self.course_outline = CourseOutlinePage(
@@ -205,7 +207,7 @@ class ProctoredExamsTest(BaseInstructorDashboardTest):
         self._auto_auth("STAFF_TESTER", "staff101@example.com", True)
         self.course_outline.visit()
 
-        #open the exam settings to make it a proctored exam.
+        # open the exam settings to make it a proctored exam.
         self.course_outline.open_exam_settings_dialog()
         self.course_outline.make_exam_proctored()
         time.sleep(2)  # Wait for 2 seconds to save the settings.
@@ -241,7 +243,7 @@ class ProctoredExamsTest(BaseInstructorDashboardTest):
         # Start the proctored exam.
         self.courseware_page.start_timed_exam()
 
-    @flaky(max_runs=20, min_passes=20)
+    @flaky  # TODO fix this SOL-1183
     def test_can_add_remove_allowance(self):
         """
         Make sure that allowances can be added and removed.
@@ -249,10 +251,8 @@ class ProctoredExamsTest(BaseInstructorDashboardTest):
         # Given that an exam has been configured to be a timed exam.
         self._create_a_timed_exam_and_attempt()
 
-        LogoutPage(self.browser).visit()
-
         # When I log in as an instructor,
-        self.log_in_as_instructor()
+        __, __ = self.log_in_as_instructor()
 
         # And visit the Allowance Section of Instructor Dashboard's Timed Exam tab
         instructor_dashboard_page = self.visit_instructor_dashboard()
@@ -261,19 +261,15 @@ class ProctoredExamsTest(BaseInstructorDashboardTest):
         # Then I can add Allowance to that exam for a student
         self.assertTrue(allowance_section.is_add_allowance_button_visible)
 
-    @flaky(max_runs=20, min_passes=20)
     def test_can_reset_attempts(self):
         """
         Make sure that Exam attempts are visible and can be reset.
         """
-
         # Given that an exam has been configured to be a proctored exam.
         self._create_a_timed_exam_and_attempt()
 
-        LogoutPage(self.browser).visit()
-
         # When I log in as an instructor,
-        self.log_in_as_instructor()
+        __, __ = self.log_in_as_instructor()
 
         # And visit the Student Proctored Exam Attempts Section of Instructor Dashboard's Timed Exam tab
         instructor_dashboard_page = self.visit_instructor_dashboard()
