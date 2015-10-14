@@ -333,6 +333,7 @@ class ProctoredExamTest(UniqueCourseTest):
         # Then the time allotted text field becomes visible
         self.assertTrue(self.course_outline.time_allotted_field_present())
 
+
 class CoursewareMultipleVerticalsTest(UniqueCourseTest):
     """
     Test courseware with multiple verticals
