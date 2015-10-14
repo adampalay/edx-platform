@@ -570,12 +570,6 @@ class CourseOutlinePage(CoursePage, CourseOutlineContainer):
         """
         self.q(css="#id_practice_exam").first.click()
 
-    def time_allotted_field_present(self):
-        """
-        returns whether the time allotted field is present
-        """
-        return self.q(css="#id_time_limit_div").present
-
     def time_allotted_field_visible(self):
         """
         returns whether the time allotted field is visible

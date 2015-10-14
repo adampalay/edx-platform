@@ -291,7 +291,7 @@ class ProctoredExamTest(UniqueCourseTest):
         self.course_outline.select_timed_exam()
 
         # Then the time allotted text field becomes visible
-        self.assertTrue(self.course_outline.time_allotted_field_present())
+        self.assertTrue(self.course_outline.time_allotted_field_visible())
 
     def test_time_allotted_field_is_visible_with_proctored_exam(self):
         """
@@ -311,7 +311,7 @@ class ProctoredExamTest(UniqueCourseTest):
         self.course_outline.select_proctored_exam()
 
         # Then the time allotted text field becomes visible
-        self.assertTrue(self.course_outline.time_allotted_field_present())
+        self.assertTrue(self.course_outline.time_allotted_field_visible())
 
     def test_time_allotted_field_is_visible_with_practice_exam(self):
         """
@@ -331,7 +331,7 @@ class ProctoredExamTest(UniqueCourseTest):
         self.course_outline.select_practice_exam()
 
         # Then the time allotted text field becomes visible
-        self.assertTrue(self.course_outline.time_allotted_field_present())
+        self.assertTrue(self.course_outline.time_allotted_field_visible())
 
 
 class CoursewareMultipleVerticalsTest(UniqueCourseTest):
