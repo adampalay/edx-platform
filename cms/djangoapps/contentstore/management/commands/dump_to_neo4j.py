@@ -6,6 +6,7 @@ from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.django import modulestore
 import datetime
 
+from opaque_keys.edx.locator import BlockUsageLocator
 from django.contrib.auth.models import User
 from student.models import CourseEnrollment
 
@@ -81,6 +82,7 @@ class Command(BaseCommand):
 
             enrollments = []
             for enrollment in CourseEnrollment.objects.all():
+                user = enrollment.user
                 user_node = Node(
                     'student',
                     id=user.id,
@@ -88,7 +90,7 @@ class Command(BaseCommand):
                     gender=user.profile.gender,
                     year_of_birth=user.profile.year_of_birth,
                     level_of_education=user.profile.level_of_education,
-                    country=user.profile.country
+                    country=unicode(user.profile.country)
                 )
                 course_key = unicode(enrollment.course_id)
                 course_node = node_map[course_key]
@@ -109,6 +111,8 @@ def create_node(xblock_type, fields):
             fields[key] = unicode(value)
         elif isinstance(value, datetime.timedelta):
             fields[key] = value.seconds
+        elif isinstance(value, BlockUsageLocator):
+            fields[key] = unicode(value)
     try:
         node = Node('xblock', xblock_type, xblock_type=xblock_type, **fields)
     except:
