@@ -1,3 +1,7 @@
+"""
+Tests covering the Open edX Paver prequisites installation workflow
+"""
+
 import os
 import unittest
 from pavelib.prereqs import no_prereq_install
@@ -41,13 +45,13 @@ class TestPaverPrereqInstall(unittest.TestCase):
         """
         self.check_val('false', False)
 
-    def test_no_prereq_install_True(self):
+    def test_no_prereq_install_true(self):
         """
         Ensure that 'True' will be True.
         """
         self.check_val('True', True)
 
-    def test_no_prereq_install_False(self):
+    def test_no_prereq_install_false(self):
         """
         Ensure that 'False' will be False.
         """
