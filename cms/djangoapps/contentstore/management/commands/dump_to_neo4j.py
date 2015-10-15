@@ -49,61 +49,8 @@ class Command(BaseCommand):
 
         if options['dump_all']:
             courses = modulestore().get_courses()
-            node_map = {}
-            for course in courses:
-                print u'working on course ' + unicode(course.id)
-                # first pass will create graph nodes and key-node mapping,
-                # which will be used for searching in the second pass
-                items = modulestore().get_items(course.id)
-                course_node = None
-                for item in items:
-                    if 'detached' in item.runtime.load_block_type(item.category)._class_tags:
-                        continue
-                    # convert all fields to a dict and filter out parent field
-                    fields = dict(
-                        (field, field_value.read_from(item))
-                        for (field, field_value) in item.fields.iteritems()
-                        if field not in ['parent', 'children']
-                    )
-                    block_type = item.scope_ids.block_type
-                    node = create_node(block_type, fields)
-                    node_map[unicode(item.location)] = node
-                    if block_type == 'course':
-                        course_node = node
-                graph.create(*node_map.values())
-
-                # second pass
-                relationships = []
-                for item in items:
-                    if 'detached' in item.runtime.load_block_type(item.category)._class_tags:
-                        continue
-                    if item.has_children:
-                        for child in item.children:
-                            relationship = Relationship(node_map[unicode(item.location)], 'PARENT_OF', node_map[unicode(child)])
-                            relationships.append(relationship)
-                graph.create(*relationships)
-
-                # third pass
-                enrollments = []
-                for enrollment in CourseEnrollment.objects.filter(course_id=course.id):
-                    user = enrollment.user
-                    user_node = Node(
-                        'student',
-                        id=user.id,
-                        name=user.profile.name,
-                        gender=user.profile.gender,
-                        year_of_birth=user.profile.year_of_birth,
-                        level_of_education=user.profile.level_of_education,
-                        country=unicode(user.profile.country)
-                    )
-                    if course_node:
-                        enrollments.append(
-                            Relationship(user_node, "ENROLLED_IN", course_node)
-                        )
-                graph.create(*enrollments)
-
-
-
+            for course in courses[:5]:
+                import_course(course, graph)
 
 
 def create_node(xblock_type, fields):
@@ -120,3 +67,57 @@ def create_node(xblock_type, fields):
         import pdb; pdb.set_trace()
         raise
     return node
+
+
+def import_course(course, graph):
+    node_map = {}
+    print u'working on course ' + unicode(course.id)
+    # first pass will create graph nodes and key-node mapping,
+    # which will be used for searching in the second pass
+    items = modulestore().get_items(course.id)
+    course_node = None
+    for item in items:
+        if 'detached' in item.runtime.load_block_type(item.category)._class_tags:
+            continue
+        # convert all fields to a dict and filter out parent field
+        fields = dict(
+            (field, field_value.read_from(item))
+            for (field, field_value) in item.fields.iteritems()
+            if field not in ['parent', 'children']
+        )
+        block_type = item.scope_ids.block_type
+        node = create_node(block_type, fields)
+        node_map[unicode(item.location)] = node
+        if block_type == 'course':
+            course_node = node
+    graph.create(*node_map.values())
+
+    # second pass
+    relationships = []
+    for item in items:
+        if 'detached' in item.runtime.load_block_type(item.category)._class_tags:
+            continue
+        if item.has_children:
+            for child in item.children:
+                relationship = Relationship(node_map[unicode(item.location)], 'PARENT_OF', node_map[unicode(child)])
+                relationships.append(relationship)
+    graph.create(*relationships)
+
+    # third pass
+    enrollments = []
+    for enrollment in CourseEnrollment.objects.filter(course_id=course.id):
+        user = enrollment.user
+        user_node = Node(
+            'student',
+            id=user.id,
+            name=user.profile.name,
+            gender=user.profile.gender,
+            year_of_birth=user.profile.year_of_birth,
+            level_of_education=user.profile.level_of_education,
+            country=unicode(user.profile.country)
+        )
+        if course_node:
+            enrollments.append(
+                Relationship(user_node, "ENROLLED_IN", course_node)
+            )
+    graph.create(*enrollments)
