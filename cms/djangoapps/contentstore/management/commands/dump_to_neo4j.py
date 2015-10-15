@@ -52,7 +52,7 @@ class Command(BaseCommand):
 
         if options['verbosity']:
             # setup verbosity for third party libraries
-            set_logging(options['verbosity'], ['httpstream', 'py2neo.cypher'], 4)
+            set_logging(options['verbosity'], ['httpstream', 'py2neo'], 4)
             # setup current module
             set_logging(options['verbosity'], ['dump_to_neo4j'])
 
@@ -118,6 +118,7 @@ def import_course(course, graph):
         node_map[unicode(item.location)] = node
         if block_type == 'course':
             course_node = create_node(["courseContainer"], fields)
+            graph.create(course_node)
     graph.create(*node_map.values())
 
     # second pass
@@ -146,7 +147,8 @@ def import_course(course, graph):
             gender=user.profile.gender,
             year_of_birth=user.profile.year_of_birth,
             level_of_education=user.profile.level_of_education,
-            country=unicode(user.profile.country)
+            country=unicode(user.profile.country),
+            is_staff=user.is_staff,
         )
         if course_node:
             enrollments.append(
