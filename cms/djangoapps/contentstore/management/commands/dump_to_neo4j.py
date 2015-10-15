@@ -76,7 +76,7 @@ class Command(BaseCommand):
         logger.info('Done.')
 
 
-def create_node(xblock_type, fields):
+def create_node(labels, fields):
     for key, value in fields.iteritems():
         if isinstance(value, dict):
             fields[key] = json.dumps(value)
@@ -85,11 +85,16 @@ def create_node(xblock_type, fields):
         elif isinstance(value, datetime.timedelta):
             fields[key] = value.seconds
     try:
-        node = Node('xblock', xblock_type, xblock_type=xblock_type, **fields)
+        node = Node(*labels, **fields)
     except:
         import pdb; pdb.set_trace()
         raise
     return node
+
+
+def create_xblock_node(block_type, fields):
+    fields['xblock_type'] = block_type
+    return create_node(['xblock', block_type], fields)
 
 
 def import_course(course, graph):
@@ -109,10 +114,10 @@ def import_course(course, graph):
             if field not in ['parent', 'children']
         )
         block_type = item.scope_ids.block_type
-        node = create_node(block_type, fields)
+        node = create_xblock_node(block_type, fields)
         node_map[unicode(item.location)] = node
         if block_type == 'course':
-            course_node = node
+            course_node = create_node(["courseContainer"], fields)
     graph.create(*node_map.values())
 
     # second pass
@@ -131,8 +136,9 @@ def import_course(course, graph):
 
     # third pass
     enrollments = []
-    for enrollment in CourseEnrollment.objects.filter(course_id=course.id):
+    for enrollment in CourseEnrollment.objects.filter(course_id=course.id, is_active=True):
         user = enrollment.user
+        mode = enrollment.mode
         user_node = Node(
             'student',
             id=user.id,
@@ -144,7 +150,7 @@ def import_course(course, graph):
         )
         if course_node:
             enrollments.append(
-                Relationship(user_node, "ENROLLED_IN", course_node)
+                Relationship(user_node, "ENROLLED_IN", course_node, mode=mode)
             )
     graph.create(*enrollments)
 
