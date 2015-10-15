@@ -101,6 +101,9 @@ def import_course(course, graph):
             for child in item.children:
                 relationship = Relationship(node_map[unicode(item.location)], 'PARENT_OF', node_map[unicode(child)])
                 relationships.append(relationship)
+        if course_node:
+            relationship = Relationship(node_map[unicode(item.location)], 'IN', course_node)
+            relationships.append(relationship)
     graph.create(*relationships)
 
     # third pass
