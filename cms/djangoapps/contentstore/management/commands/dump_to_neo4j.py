@@ -105,8 +105,6 @@ def import_course(course, graph):
     items = modulestore().get_items(course.id)
     course_node = None
     for item in items:
-        # if 'detached' in item.runtime.load_block_type(item.category)._class_tags:
-        #     continue
         # convert all fields to a dict and filter out parent field
         fields = dict(
             (field, field_value.read_from(item))
@@ -124,8 +122,6 @@ def import_course(course, graph):
     # second pass
     relationships = []
     for item in items:
-        # if 'detached' in item.runtime.load_block_type(item.category)._class_tags:
-        #     continue
         if item.has_children:
             for child in item.children:
                 relationship = Relationship(node_map[unicode(item.location)], 'PARENT_OF', node_map[unicode(child)])
