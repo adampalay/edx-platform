@@ -1,7 +1,10 @@
 import json
+import logging
 from django.core.management.base import BaseCommand, CommandError
 from optparse import make_option
 from django.conf import settings
+from opaque_keys import InvalidKeyError
+from opaque_keys.edx.keys import CourseKey
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.django import modulestore
 import datetime
@@ -11,8 +14,11 @@ from student.models import CourseEnrollment
 
 from py2neo import Graph, Node, Relationship, authenticate
 
+logger = logging.getLogger('dump_to_neo4j')
+
 def serialize_course(course):
     pass
+
 
 class Command(BaseCommand):
     help = "Dump course items into a graph database"
@@ -43,14 +49,31 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         graph = Graph(settings.NEO4J_URI)
+
+        if options['verbosity']:
+            # setup verbosity for third party libraries
+            set_logging(options['verbosity'], ['httpstream', 'py2neo.cypher'], 4)
+            # setup current module
+            set_logging(options['verbosity'], ['dump_to_neo4j'])
+
         if options['clear_all_first']:
-            print("deleting")
+            logger.info("Clearing the database...")
             graph.delete_all()
 
         if options['dump_all']:
             courses = modulestore().get_courses()
-            for course in courses[:5]:
+            for course in courses:
                 import_course(course, graph)
+        elif options['course']:
+            course_id = options['course']
+            try:
+                course_key = CourseKey.from_string(course_id)
+            except InvalidKeyError:
+                raise CommandError('invalid key "{}"'.format(course_id))
+            course = modulestore().get_course(course_key)
+            import_course(course, graph)
+
+        logger.info('Done.')
 
 
 def create_node(xblock_type, fields):
@@ -71,7 +94,7 @@ def create_node(xblock_type, fields):
 
 def import_course(course, graph):
     node_map = {}
-    print u'working on course ' + unicode(course.id)
+    logger.info(u'working on course ' + unicode(course.id))
     # first pass will create graph nodes and key-node mapping,
     # which will be used for searching in the second pass
     items = modulestore().get_items(course.id)
@@ -124,3 +147,11 @@ def import_course(course, graph):
                 Relationship(user_node, "ENROLLED_IN", course_node)
             )
     graph.create(*enrollments)
+
+
+def set_logging(level, logger_names, ratio=3):
+    # convert django verbosity to python log level
+    logger_level = (ratio - int(level)) * 10
+    for name in logger_names:
+        module_logger = logging.getLogger(name)
+        module_logger.setLevel(logger_level)
