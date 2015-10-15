@@ -145,6 +145,7 @@ def import_course(course, graph):
             level_of_education=user.profile.level_of_education,
             country=unicode(user.profile.country),
             is_staff=user.is_staff,
+            is_active=user.is_active,
         )
         if course_node:
             enrollments.append(
